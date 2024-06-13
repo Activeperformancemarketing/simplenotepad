@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Notepad</title>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        
+		body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif, Arial
+    font-weight: 400;
+	size:17px;
+    background-color: #fff;
+	Line Height: 32px;
+    margin: 0;
+    padding: 0;
+}
+
+        .notepad {
+            display: flex;
+            padding: 30px;
+            justify-content: center;
+            align-items: center;
+            height: 90vh;
+			
+        }
+
+        .editor {
+            width: 80%;
+            max-width: 800px;
+            height: -webkit-fill-available;
+            padding: 20px;
+            position: relative;
+            background-color: #fff;
+			font:'Inter';
+			
+        }
+
+        .ql-container.ql-snow {
+            border: 0px solid #fff;
+        }
+
+	.ql-editor {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif, Arial;
+    font-style: normal;
+    font-weight: 400;
+    color: rgb(14, 16, 26);
+    font-size: 17px;
+    line-height: 32px;
+}
+
+
+        .editor-content {
+            width: calc(100% - 20px);
+            height: calc(100% - 40px);
+            padding: 10px;
+            margin: 0;
+            border: none;
+            outline: none;
+            overflow-y: auto;
+            resize: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #fff;
+        }
+
+        .button-container {
+            position: absolute;
+            bottom: 0;
+            right: 20px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            outline: none;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button.icon {
+            padding: 10px 15px;
+            margin-right: 10px;
+        }
+
+        .notes-container {
+    width: 300px;
+    padding: 20px;
+    background-color: #blue;
+    box-shadow: -5px 0 10px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    transition: width 0.3s ease;
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100%;
+    border-left: 3px solid #0056b3 !important; /* Add left border */
+    z-index: 1; /* Ensure the panel is above the editor */
+}
+
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        .notes-container ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    padding-left: 10px; /* Adjust left padding to offset the border */
+}
+
+        .notes-container li {
+            padding: 10px;
+            background-color: #f9f9f9;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .note-content {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .highlighted {
+		border:1px !important;
+		border-color:black !important;
+		background-color: #d7dbff !important;
+	
+		}
+		
+		.ql-toolbar.ql-snow {
+    border: none !important;
+	position: absolute !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    background-color: #white; /* Optional: Set background color */
+    border-top: 1px solid #ddd; /* Optional: Add a border at the top */
+	
+}
+.ql-toolbar.ql-snow button {
+    color: #444 !important; /* Optional: Change button color */
+    margin: 0 3px !important; /* Optional: Adjust button margin */
+    font-size: 14px !important; /* Optional: Adjust button font size */
+    border: none !important; /* Optional: Remove button border */
+    outline: none !important; /* Optional: Remove button outline */
+}
+
+    
+}
+
+    </style>
+</head>
+<body>
+
+    <div class="notepad">
+        <div class="editor">
+            <div id="editor-container" class="editor-content" data-placeholder="Enter your note here..."></div>
+            <div class="button-container">
+                <button onclick="toggleNotesVisibility()" class="icon">&#9776;</button>
+                <button onclick="addOrUpdateNote()" id="save-button">Save New Note</button>
+            </div>
+            <input type="hidden" id="edit-note-index">
+        </div>
+        <div class="notes-container" id="notes-container">
+            <h2>Existing Notes</h2>
+            <ul id="existing-notes">
+                <!-- Existing notes will be displayed here -->
+            </ul>
+        </div>
+    </div>
+	
+	<script src="https://cdn.quilljs.com/1.3.6/quill.core.js"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.snow.css"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.core.css"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.spellcheck.min.js"></script>
+
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script>
+        let existingNotes = [];
+        let quill;
+		
+
+        function displayExistingNotes() {
+            const notesList = document.getElementById('existing-notes');
+            notesList.innerHTML = '';
+            existingNotes.forEach((note, index) => {
+                const li = document.createElement('li');
+                const noteContent = document.createElement('div');
+                noteContent.classList.add('note-content');
+                noteContent.textContent = note.replace(/<\/?[^>]+(>|$)/g, ""); // Remove HTML tags
+                const editButton = document.createElement('button');
+                editButton.innerHTML = '&#9998;';
+                editButton.onclick = () => editNote(index);
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = '&#128465;';
+                deleteButton.onclick = () => deleteNote(index);
+                li.appendChild(noteContent);
+                li.appendChild(editButton);
+                li.appendChild(deleteButton);
+                notesList.appendChild(li);
+            });
+        }
+
+        function addOrUpdateNote() {
+            const newNoteContent = quill.root.innerHTML.trim(); // Get Quill's HTML content
+            const editIndex = document.getElementById('edit-note-index').value;
+            if (newNoteContent !== '') {
+                if (editIndex === '') {
+                    existingNotes.push(newNoteContent);
+                } else {
+                    existingNotes[editIndex] = newNoteContent;
+                    document.getElementById('edit-note-index').value = '';
+                    toggleButtonState(false);
+                }
+                saveNotesToLocalStorage();
+                displayExistingNotes();
+                quill.root.innerHTML = ''; // Clear editor content after saving
+            } else {
+                alert('Please enter a note before adding.');
+            }
+        }
+
+        function editNote(index) {
+    const notesList = document.getElementById('existing-notes');
+    const noteElements = notesList.querySelectorAll('li');
+    noteElements.forEach((element, i) => {
+        if (i === index) {
+            element.classList.add('highlighted');
+        } else {
+            element.classList.remove('highlighted');
+        }
+    });
+
+    const noteToEdit = existingNotes[index];
+    quill.root.innerHTML = noteToEdit; // Set Quill's HTML content to edit
+    document.getElementById('edit-note-index').value = index;
+    toggleButtonState(true);
+}
+
+
+
+
+        function deleteNote(index) {
+            existingNotes.splice(index, 1);
+            saveNotesToLocalStorage();
+            displayExistingNotes();
+        }
+
+        function toggleButtonState(editMode) {
+            const saveButton = document.getElementById('save-button');
+            if (editMode) {
+                saveButton.textContent = 'Update';
+            } else {
+                saveButton.textContent = 'Save New Note';
+            }
+        }
+
+        function saveNotesToLocalStorage() {
+            localStorage.setItem('notes', JSON.stringify(existingNotes));
+        }
+
+        function loadNotesFromLocalStorage() {
+            const savedNotes = localStorage.getItem('notes');
+            if (savedNotes) {
+                existingNotes = JSON.parse(savedNotes);
+                displayExistingNotes();
+            }
+        }
+
+        function toggleNotesVisibility() {
+            const notesContainer = document.getElementById('notes-container');
+            if (notesContainer.style.display === 'none') {
+                notesContainer.style.display = 'block';
+            } else {
+                notesContainer.style.display = 'none';
+            }
+        }
+
+        loadNotesFromLocalStorage();
+
+        // Initialize Quill editor
+        quill = new Quill('#editor-container', {
+            theme: 'snow'
+        });
+    </script>
+</body>
+</html>
